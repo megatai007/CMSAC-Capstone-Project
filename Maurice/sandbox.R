@@ -14,7 +14,7 @@ league_avg <- data_2022 %>%
   summarise(avg_woba = mean(woba, na.rm = TRUE))
 
 breakout_players22 %>%
-  ggplot(aes(x = reorder(`last_name, first_name`, woba), y = woba)) +
+  ggplot(aes(x = reorder(`last_name, first_name`, woba), y = woba, fill=`last_name, first_name`)) +
   geom_col() +
   geom_hline(yintercept = league_avg$avg_woba,
              color = "red", linetype = "dashed", linewidth = 1) +
@@ -57,3 +57,44 @@ breakout_players22 %>%
   coord_flip() +  # optional: makes bars horizontal
   labs(x = "Player", y = "Solid Contact", title = "Breakout Players 2022: Solid Contact%") +
   theme_minimal()
+
+
+
+plot_stat_bar <- function(breakout_df, league_df, stat, player_col = "last_name, first_name") {
+  # Pull the variable name safely
+  stat_sym <- rlang::ensym(stat)
+  player_sym <- rlang::sym(player_col)
+  
+  # Calculate league average for the chosen stat
+  avg_stat <- league_df %>%
+    summarise(avg = mean(!!stat_sym, na.rm = TRUE)) %>%
+    pull(avg)
+  
+  # Create the plot
+  breakout_df %>%
+    ggplot(aes(x = reorder(!!player_sym, !!stat_sym), y = !!stat_sym, fill = !!player_sym)) +
+    geom_col(show.legend = FALSE) +
+    geom_hline(yintercept = avg_stat, color = "red", linetype = "dashed", linewidth = 1) +
+    coord_flip() +
+    labs(
+      x = "Player",
+      y = rlang::as_name(stat_sym),
+      title = paste("Breakout Players 2022:", rlang::as_name(stat_sym))
+    ) +
+    theme_minimal()
+}
+
+plot_stat_bar(breakout_players22, data_2022, xwoba)
+plot_stat_bar(breakout_players22, data_2022, solidcontact_percent)
+
+
+
+
+
+
+
+
+
+
+
+
