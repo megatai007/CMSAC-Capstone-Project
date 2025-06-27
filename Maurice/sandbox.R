@@ -1,99 +1,65 @@
+library(sabRmetrics)
 library(tidyverse)
+cluster <- parallel::makeCluster(parallel::detectCores())
+data_baseballsavant <- sabRmetrics::download_baseballsavant(
+ start_date = "2024-01-01",
+ end_date = "2024-12-31",
+ cl = cluster
+)
+parallel::stopCluster(cluster)
 
-data_2023=read_csv("savant_data_2023.csv")
-data_2022=read_csv("savant_data_2022.csv")
-
-breakout_players22=data_2022 %>% 
-  filter(`last_name, first_name` %in% c("Hays, Austin", 
-                                       "Murphy, Sean",
-                                       "Heim, Jonah",
-                                       "Rutschman, Adley"))
-
-
-league_avg <- data_2022 %>%
-  summarise(avg_woba = mean(woba, na.rm = TRUE))
-
-breakout_players22 %>%
-  ggplot(aes(x = reorder(`last_name, first_name`, woba), y = woba, fill=`last_name, first_name`)) +
-  geom_col() +
-  geom_hline(yintercept = league_avg$avg_woba,
-             color = "red", linetype = "dashed", linewidth = 1) +
-  coord_flip() +
-  labs(x = "Player", y = "wOBA", title = "Breakout Players 2022: wOBA") +
-  theme_minimal()
+data_baseballsavant %>% 
+  ggplot(aes(x=attack_angle, y=swing_path_tilt)) + 
+  geom_point()
 
 
-breakout_players22 %>%
-  ggplot(aes(x = reorder(`last_name, first_name`, xwoba), y = xwoba)) +
-  geom_col() +
-  coord_flip() +  # optional: makes bars horizontal
-  labs(x = "Player", y = "xwOBA", title = "Breakout Players 2022: xwOBA") +
-  theme_minimal()
-
-breakout_players22 %>%
-  ggplot(aes(x = reorder(`last_name, first_name`, xwobacon), y = xwobacon)) +
-  geom_col() +
-  coord_flip() +  # optional: makes bars horizontal
-  labs(x = "Player", y = "xwOBACON", title = "Breakout Players 2022: xwOBACON") +
-  theme_minimal()
-
-breakout_players22 %>%
-  ggplot(aes(x = reorder(`last_name, first_name`, oz_swing_percent), y = oz_swing_percent)) +
-  geom_col() +
-  coord_flip() +  # optional: makes bars horizontal
-  labs(x = "Player", y = "OZ Swing%", title = "Breakout Players 2022: OZ Swing%") +
-  theme_minimal()
-
-breakout_players22 %>%
-  ggplot(aes(x = reorder(`last_name, first_name`, iz_contact_percent), y = iz_contact_percent)) +
-  geom_col() +
-  coord_flip() +  # optional: makes bars horizontal
-  labs(x = "Player", y = "IZ Contact%", title = "Breakout Players 2022: IZ Contact%") +
-  theme_minimal()
-
-breakout_players22 %>%
-  ggplot(aes(x = reorder(`last_name, first_name`, solidcontact_percent), y = solidcontact_percent)) +
-  geom_col() +
-  coord_flip() +  # optional: makes bars horizontal
-  labs(x = "Player", y = "Solid Contact", title = "Breakout Players 2022: Solid Contact%") +
-  theme_minimal()
+data_baseballsavant %>% 
+  ggplot(aes(x=attack_angle, y=attack_direction)) + 
+  geom_point()
 
 
+data_baseballsavant %>% 
+  ggplot(aes(x=swing_length, y=bat_speed)) + 
+  geom_point()
 
-plot_stat_bar <- function(breakout_df, league_df, stat, player_col = "last_name, first_name") {
-  # Pull the variable name safely
-  stat_sym <- rlang::ensym(stat)
-  player_sym <- rlang::sym(player_col)
-  
-  # Calculate league average for the chosen stat
-  avg_stat <- league_df %>%
-    summarise(avg = mean(!!stat_sym, na.rm = TRUE)) %>%
-    pull(avg)
-  
-  # Create the plot
-  breakout_df %>%
-    ggplot(aes(x = reorder(!!player_sym, !!stat_sym), y = !!stat_sym, fill = !!player_sym)) +
-    geom_col(show.legend = FALSE) +
-    geom_hline(yintercept = avg_stat, color = "red", linetype = "dashed", linewidth = 1) +
-    coord_flip() +
-    labs(
-      x = "Player",
-      y = rlang::as_name(stat_sym),
-      title = paste("Breakout Players 2022:", rlang::as_name(stat_sym))
-    ) +
-    theme_minimal()
-}
+data_baseballsavant %>% distinct(description)
 
-plot_stat_bar(breakout_players22, data_2022, xwoba)
-plot_stat_bar(breakout_players22, data_2022, solidcontact_percent)
+swing= c("foul", "hit_into_play", "swinging_strike", "swinging_strike_blocked", "fould_tip")
+
+swing_data_2024=data_baseballsavant %>% filter(description %in% swing)
+
+stanton_swings= swing_data_2024 %>% filter(batter_name=="Stanton, Giancarlo")
+
+stanton_swings %>% 
+  ggplot(aes(x=attack_angle, y=swing_path_tilt,color=ideal_attack_angle)) + 
+  geom_point()
 
 
+stanton_swings %>% 
+  ggplot(aes(x=attack_angle, y=attack_direction, color=ideal_attack_angle)) + 
+  geom_point()
 
 
+stanton_swings %>% 
+  ggplot(aes(x=swing_length, y=bat_speed)) + 
+  geom_point()
 
 
+stanton_swings %>% 
+  ggplot(aes(y=bat_speed, x=attack_direction, color=ideal_attack_angle)) + 
+  geom_point()
+
+stanton_swings %>% 
+  ggplot(aes(x=bat_speed, y=swing_length)) + 
+  geom_point()
+
+stanton_swings=stanton_swings %>% mutate(ideal_attack_angle = ifelse(attack_angle>=5 & attack_angle<=20, 1, 0)) %>% 
+  mutate(ideal_attack_angle=as_factor(ideal_attack_angle))
 
 
+stanton_swings %>% 
+  ggplot(aes(x=bat_speed, y=swing_length, color=ideal_attack_angle)) + 
+  geom_point()
 
 
 
